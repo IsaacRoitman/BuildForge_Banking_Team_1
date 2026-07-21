@@ -172,6 +172,19 @@ Module: `policy\modules\policy-assignment-subscription.bicep`
 | Remediation behavior | 140 member policies, all DeployIfNotExists |
 | Status | **Deployed** |
 
+### Defender for Cloud Continuous Export to Log Analytics
+| Field | Value |
+|---|---|
+| Built-in policy ID | `ffb6f416-7bd2-4488-8828-56585fef2be9` ("Deploy export to Log Analytics workspace for Microsoft Defender for Cloud data", single policy, not an initiative) |
+| Purpose / driver | Continuously exports Defender for Cloud security recommendations, security alerts, secure score (overall + per-control), and regulatory compliance data — plus weekly snapshots of each — to the centralized Sentinel workspace for long-term retention, KQL analysis, and workbook/dashboard reporting |
+| Scope | Subscription (`Banking BuildForge Team 1`, `4a23dcea-b762-4569-b255-3c45517c941b`) |
+| Assignment name | `continuous-export-to-law` |
+| Target workspace | `la-centralized-sentinel` (`rg-operations-shared`) |
+| Target resource group | `rg-operations-shared` (northcentralus) — reused existing RG; `createResourceGroup` explicitly set to `false` to avoid the policy resetting tags on the RG on every remediation cycle |
+| Managed identity / roles | SystemAssigned; **Contributor** (`b24988ac-6180-42a0-ab88-20f7382dd24c`) granted at subscription scope — the specific role required by the policy's `ExportToWorkspace` DeployIfNotExists existence check (`existenceScope: resourcegroup`) |
+| Remediation behavior | DeployIfNotExists; underlying resource is `Microsoft.Security/automations`, deployed by the policy engine via a nested resource-group-scoped deployment. A manual remediation task (`remediate-continuous-export-to-law`) was triggered after assignment since DeployIfNotExists policies don't retroactively evaluate existing state without one |
+| Status | **Deployed** |
+
 ---
 
 ## 4. Open Decisions / Not Yet Added
