@@ -31,10 +31,89 @@ resource continuousExport 'Microsoft.Security/automations@2019-01-01-preview' = 
         scopePath: subscriptionScopeId
       }
     ]
+    // Portal maps the "Exported data types" checkboxes to specific ruleSets, not just the
+    // presence of an eventSource. Bare sources (no ruleSets) show as unchecked/unrecognized
+    // in the Continuous Export blade even though the automation itself is enabled and working.
+    // These ruleSets replicate exactly what the portal generates when every checkbox/severity/
+    // filter is selected, so the UI reflects an "everything on" configuration.
     sources: [
-      { eventSource: 'Assessments' }
-      { eventSource: 'AssessmentsSnapshot' }
-      { eventSource: 'Alerts' }
+      {
+        eventSource: 'Assessments'
+        ruleSets: [
+          {
+            rules: [
+              {
+                propertyJPath: 'type'
+                propertyType: 'String'
+                expectedValue: 'Microsoft.Security/assessments'
+                operator: 'Contains'
+              }
+            ]
+          }
+        ]
+      }
+      {
+        eventSource: 'AssessmentsSnapshot'
+        ruleSets: [
+          {
+            rules: [
+              {
+                propertyJPath: 'type'
+                propertyType: 'String'
+                expectedValue: 'Microsoft.Security/assessments'
+                operator: 'Contains'
+              }
+            ]
+          }
+        ]
+      }
+      { eventSource: 'SubAssessments' }
+      { eventSource: 'SubAssessmentsSnapshot' }
+      {
+        eventSource: 'Alerts'
+        ruleSets: [
+          {
+            rules: [
+              {
+                propertyJPath: 'Severity'
+                propertyType: 'String'
+                expectedValue: 'low'
+                operator: 'Equals'
+              }
+            ]
+          }
+          {
+            rules: [
+              {
+                propertyJPath: 'Severity'
+                propertyType: 'String'
+                expectedValue: 'medium'
+                operator: 'Equals'
+              }
+            ]
+          }
+          {
+            rules: [
+              {
+                propertyJPath: 'Severity'
+                propertyType: 'String'
+                expectedValue: 'high'
+                operator: 'Equals'
+              }
+            ]
+          }
+          {
+            rules: [
+              {
+                propertyJPath: 'Severity'
+                propertyType: 'String'
+                expectedValue: 'informational'
+                operator: 'Equals'
+              }
+            ]
+          }
+        ]
+      }
       { eventSource: 'SecureScores' }
       { eventSource: 'SecureScoresSnapshot' }
       { eventSource: 'SecureScoreControls' }
