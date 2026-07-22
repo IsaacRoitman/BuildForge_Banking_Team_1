@@ -42,6 +42,23 @@ module sentinelWorkspace 'modules/sentinel-workspace.bicep' = {
   }
 }
 
+// Deployed after sentinelWorkspace (explicit dependsOn) so the target Log Analytics
+// workspace is guaranteed to exist before Defender for Cloud Continuous Export is
+// configured. Defender for Cloud plans themselves are enabled separately via the
+// "Configure Microsoft Defender for Cloud plans" policy initiative (policy/main.bicep)
+// and must be assigned/remediated before this module is deployed.
+module defenderContinuousExport 'modules/defender-continuous-export.bicep' = {
+  name: 'defenderContinuousExportDeployment'
+  scope: rg
+  params: {
+    location: location
+    subscriptionScopeId: subscription().id
+    workspaceResourceId: sentinelWorkspace.outputs.workspaceId
+    tags: tags
+  }
+}
+
 output resourceGroupName string = rg.name
 output workspaceId string = sentinelWorkspace.outputs.workspaceId
 output workspaceName string = sentinelWorkspace.outputs.workspaceName
+output defenderContinuousExportAutomationId string = defenderContinuousExport.outputs.automationId

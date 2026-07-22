@@ -23,6 +23,22 @@ Status legend: **Deployed** | **Staged (not yet deployed)** | **Modified in plac
 
 ---
 
+## 1a. Defender for Cloud Continuous Export (direct resource deployment)
+
+| Field | Value |
+|---|---|
+| Resource | `Microsoft.Security/automations/export-to-centralized-law` (resource-group scoped) |
+| Bicep files | `main.bicep`, `modules\defender-continuous-export.bicep` |
+| Deployment ordering | Deployed in the same `main.bicep` run as the Log Analytics workspace, implicitly ordered **after** `sentinelWorkspace` via the `workspaceResourceId` output reference (Bicep infers the dependency — no explicit `dependsOn` needed) |
+| Purpose / driver | Deploys the actual Defender for Cloud Continuous Export configuration directly via Bicep, rather than relying solely on the `continuous-export-to-law` policy's DeployIfNotExists remediation (see Section 3) — the policy-only approach did not reliably produce the resource, so this guarantees the export is enabled at deployment time |
+| Scope | Subscription-wide (`scopePath: subscription().id`) |
+| Target workspace | `la-centralized-sentinel` (`rg-operations-shared`), passed as `sentinelWorkspace.outputs.workspaceId` |
+| Exported data types | Assessments (+ snapshot), Alerts, SecureScores (+ snapshot), SecureScoreControls (+ snapshot), RegulatoryComplianceAssessment (+ snapshot) — 9 event sources, matching the Azure Portal "Continuous export" blade defaults |
+| Prerequisite | Defender for Cloud plans must already be enabled at the management group / subscription (see "Configure Microsoft Defender for Cloud plans" initiative, Section 2) — this resource does not enable Defender plans itself, only the export of the data those plans produce |
+| Status | **Deployed** — confirmed live via `az resource show`, `isEnabled: true` |
+
+---
+
 ## 2. Policy Initiatives — Management Group scope
 
 Root file: `policy\main.bicep` (targetScope = `managementGroup`)
@@ -182,8 +198,8 @@ Module: `policy\modules\policy-assignment-subscription.bicep`
 | Target workspace | `la-centralized-sentinel` (`rg-operations-shared`) |
 | Target resource group | `rg-operations-shared` (northcentralus) — reused existing RG; `createResourceGroup` explicitly set to `false` to avoid the policy resetting tags on the RG on every remediation cycle |
 | Managed identity / roles | SystemAssigned; **Contributor** (`b24988ac-6180-42a0-ab88-20f7382dd24c`) granted at subscription scope — the specific role required by the policy's `ExportToWorkspace` DeployIfNotExists existence check (`existenceScope: resourcegroup`) |
-| Remediation behavior | DeployIfNotExists; underlying resource is `Microsoft.Security/automations`, deployed by the policy engine via a nested resource-group-scoped deployment. A manual remediation task (`remediate-continuous-export-to-law`) was triggered after assignment since DeployIfNotExists policies don't retroactively evaluate existing state without one |
-| Status | **Deployed** |
+| Remediation behavior | DeployIfNotExists; underlying resource is `Microsoft.Security/automations`, deployed by the policy engine via a nested resource-group-scoped deployment. **Note:** policy-only remediation did not reliably produce the resource in this environment — the same `Microsoft.Security/automations` resource is now also deployed directly via Bicep (see Section 1a) as the authoritative delivery mechanism. This policy assignment is retained for ongoing compliance auditing/drift detection |
+| Status | **Deployed** (policy assignment); superseded as the delivery mechanism by the direct Bicep deployment in Section 1a |
 
 ---
 
